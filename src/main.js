@@ -173,10 +173,9 @@ function onBundleDeleted (bundleName) {
 
 async function onFilesystemChange (eventType, filePath, details) {
   try {
-    debug('onFilesystemChange', eventType, filePath, details.type)
-    if (details.type !== 'file' || details.event === 'unknown') return
-
-    filePath = relativeSassPath(filePath)
+    debug('onFilesystemChange', eventType, filePath, details)
+    if (details.event === 'unknown') return
+    filePath = relativeSassPath(details.watchedPath)
 
     if (eventType === 'deleted') {
       cache.file_checksums.update(filePath, undefined)
@@ -234,10 +233,12 @@ function unwatch (filename) {
 exports.startWatcher = function startWatcher () {
   debug('watching for changes to any scss files')
   watcher = chokidar
-    .watch(PATHS.brandable_variables_json, {persistent: true, cwd: PATHS.sass_dir}) // TODO: remove line
+    .watch(PATHS.brandable_variables_json, {
+      persistent: true,
+      cwd: path.resolve(process.cwd(),PATHS.sass_dir),
+    })
     .on('add', (f) => debug('file added to watcher', f))
     .add(PATHS.all_sass_bundles)
-
   for (const key in cache.bundles_with_deps.data) {
     cache.bundles_with_deps.data[key].includedFiles.forEach(watch)
   }
